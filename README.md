@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 📖 PageStep
 
 A calm, personal **reading-habit tracker** — a Progressive Web App you add to your
@@ -140,7 +139,3 @@ to change.
 ## License
 
 Personal project — do whatever you like with it. 🌿
-=======
-# Book_tracking_app
-A personal project for tracking the books I've been reading. 
->>>>>>> 1f47e1fb245c304d640e16c54af2d41f27878980
