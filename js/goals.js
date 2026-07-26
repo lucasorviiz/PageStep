@@ -200,6 +200,34 @@
 
   // ---- stats --------------------------------------------------------------
 
+  // The current calendar week, Monday -> Sunday, for the home streak widget.
+  // Each entry knows whether it's today, in the future, and whether the goal
+  // was met / had any activity.
+  function currentWeekMonSun() {
+    var totals = dailyTotals();
+    var today = startOfDay(new Date());
+    var todayStr = Store.localDateStr(today);
+    var dow = today.getDay();                 // 0 Sun .. 6 Sat
+    var sinceMonday = (dow === 0) ? 6 : dow - 1;
+    var monday = new Date(today.getTime() - sinceMonday * DAY_MS);
+    var labels = ["M", "T", "W", "T", "F", "S", "S"];
+    var out = [];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday.getTime() + i * DAY_MS);
+      var ds = Store.localDateStr(d);
+      out.push({
+        date: ds,
+        dateObj: d,
+        label: labels[i],
+        value: valueForDate(ds, totals),
+        met: isDateMet(ds, totals),
+        isToday: ds === todayStr,
+        isFuture: d.getTime() > today.getTime()
+      });
+    }
+    return out;
+  }
+
   function weekView() {
     var days = windowDays(7);
     var metCount = days.filter(function (d) { return d.met; }).length;
@@ -299,6 +327,7 @@
     recordGoalChange: recordGoalChange,
     isDateMet: isDateMet,
     windowDays: windowDays,
+    currentWeekMonSun: currentWeekMonSun,
     qualifyingDays: qualifyingDays,
     progressToNextLevel: progressToNextLevel,
     evaluateProgression: evaluateProgression,

@@ -1,6 +1,7 @@
 /*
  * app.js — view rendering and navigation for PageStep.
- * Views: home (dashboard) · library · log/read · progress.
+ * Views: home ("My Library" — greeting, streak widget, cover grids) ·
+ *        log/read · progress.
  */
 (function () {
   "use strict";
@@ -18,15 +19,27 @@
     document.querySelectorAll(".tab").forEach(function (t) {
       t.classList.toggle("is-active", t.dataset.view === view);
     });
+    // On the library/home view the widget shows the level, so hide the header
+    // chip to avoid duplication.
+    document.getElementById("header-level").style.display = (view === "home") ? "none" : "";
+    measureHeader();
     viewEl.scrollTop = 0;
     window.scrollTo(0, 0);
+  }
+
+  // Publish the real header height so sticky elements can sit just below it.
+  function measureHeader() {
+    var h = document.querySelector(".app-header");
+    if (h) {
+      document.documentElement.style.setProperty(
+        "--header-h", Math.round(h.getBoundingClientRect().height) + "px");
+    }
   }
 
   function render() {
     document.getElementById("header-level").textContent = "Lv " + Store.getProgress().level;
     var fn = ({
       home: renderHome,
-      library: renderLibrary,
       log: renderLog,
       progress: renderProgress
     })[currentView] || renderHome;
@@ -34,62 +47,152 @@
     viewEl.appendChild(fn());
   }
 
-  // ---------------------------------------------------------------- HOME
+  // ---------------------------------------------------------------- HOME = MY LIBRARY
 
   function renderHome() {
     var frag = document.createDocumentFragment();
+
+    // 1. Personalized greeting (scrolls away)
+    var name = ((Store.getSettings().name || "").trim()) || "there";
+    frag.appendChild(el("div", { class: "greeting" }, [
+      el("div", { class: "greeting__hi", text: "Welcome back, " + name + "!" }),
+      el("div", { class: "greeting__sub", text: greetingSub() })
+    ]));
+
+    // 2. Streak / progress widget — sticky at the top while the grid scrolls
+    frag.appendChild(progressWidget());
+
+    // primary action — kept prominent
+    frag.appendChild(el("button", { class: "hero-btn", style: "margin-top:8px",
+      onclick: function () { navigate("log"); } }, [
+      el("span", { html: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' }),
+      "Start Reading"
+    ]));
+
+    // 3. Currently Reading — cover grid
+    var reading = Store.getBooks("reading");
+    frag.appendChild(el("div", { class: "lib-section-head" }, [
+      el("h2", { text: "Currently Reading" }),
+      el("button", { class: "add-btn", onclick: openSearchModal }, [
+        el("span", { html: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>' }),
+        "Add"
+      ])
+    ]));
+    if (reading.length) frag.appendChild(coverGrid(reading));
+    else frag.appendChild(el("div", { class: "lib-empty" }, [
+      "No books yet — tap ", el("b", { text: "Add" }), " to find your next read."
+    ]));
+
+    // Finished — cover grid
+    var finished = Store.getBooks("finished");
+    frag.appendChild(el("div", { class: "lib-section-head" }, [
+      el("h2", { text: "Finished" }),
+      finished.length ? el("span", { class: "count", text: finished.length }) : null
+    ]));
+    if (finished.length) frag.appendChild(coverGrid(finished));
+    else frag.appendChild(el("div", { class: "lib-empty", text: "Books you finish will collect here. 🌱" }));
+
+    return frag;
+  }
+
+  function greetingSub() {
+    var h = new Date().getHours();
+    var part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    return part + " — ready for a few pages?";
+  }
+
+  // The sticky widget: level + streak, a Mon–Sun week tracker, and today's goal.
+  function progressWidget() {
+    var week = Goals.currentWeekMonSun();
+    var metCount = week.filter(function (d) { return d.met; }).length;
+    var st = Goals.streak();
+    var p = Store.getProgress();
     var g = Store.getGoals();
     var todayVal = Goals.todayValue();
     var metToday = todayVal >= g.current;
-    var unit = Goals.metricLabel(true);
 
-    // Today's goal card
+    var weekEl = el("div", { class: "week" });
+    week.forEach(function (d) {
+      var cls = "week__dot";
+      if (d.met) cls += " week__dot--met";
+      else if (d.value > 0) cls += " week__dot--partial";
+      if (d.isToday) cls += " week__dot--today";
+      var dot = el("div", { class: cls, text: d.met ? "✓" : (d.value > 0 ? "·" : "") });
+      if (d.isFuture) dot.style.opacity = "0.4";
+      weekEl.appendChild(el("div", { class: "week__day" }, [
+        dot, el("div", { class: "week__label", text: d.label })
+      ]));
+    });
+
+    var streakChip = st.current > 0
+      ? el("span", { class: "streak-chip", html: "🔥 " + st.current + "-day streak" })
+      : el("span", { class: "streak-chip",
+          style: "background:var(--sage-soft); color:var(--sage-dark)", text: "New week — let's read" });
+
     var pct = Math.min(100, Math.round((todayVal / g.current) * 100));
-    var goalCard = el("div", { class: "card" }, [
-      el("div", { class: "today-goal" }, [
-        el("div", { class: "today-goal__value", html:
-          todayVal + "<small> / " + g.current + " " + Goals.metricShort() + "</small>" }),
-        el("div", { class: "today-goal__sub" + (metToday ? " today-goal__met" : ""), text:
-          metToday ? "✓ Today's goal met — lovely." : "Today's reading so far" })
+
+    var card = el("div", { class: "card progress-widget" }, [
+      el("div", { class: "progress-widget__top" }, [
+        el("div", { class: "progress-widget__level" }, [
+          el("span", { class: "lvl-badge", text: p.level }),
+          el("span", { text: "Level " + p.level })
+        ]),
+        streakChip
       ]),
-      el("div", { class: "bar mt-8" }, [
+      weekEl,
+      el("div", { class: "progress-widget__today" }, [
+        el("span", { html: (metToday ? "✓ " : "") + "Today <b>" + todayVal + "</b> / " +
+          g.current + " " + Goals.metricShort() }),
+        el("span", { text: metCount + " of 7 days this week" })
+      ]),
+      el("div", { class: "bar", style: "margin-top:8px" }, [
         el("div", { class: "bar__fill" + (metToday ? " bar__fill--gold" : ""),
           style: "width:" + pct + "%" })
       ])
     ]);
-    frag.appendChild(goalCard);
 
-    // Big Start Reading button
-    var start = el("button", { class: "hero-btn mt-16", onclick: function () { navigate("log"); } }, [
-      el("span", { html: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' }),
-      "Start Reading"
-    ]);
-    frag.appendChild(start);
+    return el("div", { class: "lib-sticky" }, [card]);
+  }
 
-    // Level + progress to next level
-    frag.appendChild(el("div", { class: "section-title", text: "Your progress" }));
-    frag.appendChild(levelCard());
+  // ---------------------------------------------------------------- COVER GRID
 
-    // This week
-    frag.appendChild(el("div", { class: "section-title", text: "This week" }));
-    frag.appendChild(weekCard());
+  function coverGrid(books) {
+    var grid = el("div", { class: "cover-grid" });
+    books.forEach(function (b) { grid.appendChild(coverCell(b)); });
+    return grid;
+  }
 
-    // Currently reading quick list
-    var reading = Store.getBooks("reading");
-    frag.appendChild(el("div", { class: "row-between", style: "margin:22px 4px 10px" }, [
-      el("div", { class: "section-title", style: "margin:0", text: "Currently reading" }),
-      el("button", { class: "link", text: "Library →", onclick: function () { navigate("library"); } })
-    ]));
-    if (reading.length) {
-      var card = el("div", { class: "card", style: "padding:6px" });
-      reading.slice(0, 3).forEach(function (b) { card.appendChild(bookRow(b)); });
-      frag.appendChild(card);
-    } else {
-      frag.appendChild(emptyState("📚", "No books yet", "Add one to start logging sessions.",
-        "Find a book", function () { openSearchModal(); }));
+  function coverCell(book) {
+    var art = el("div", { class: "cover-cell__art" });
+
+    function usePlaceholder() {
+      art.classList.add("cover-cell__art--placeholder");
+      art.innerHTML = "";
+      art.appendChild(el("span", { text: book.title }));
+      addBadge();
+    }
+    function addBadge() {
+      if (book.status === "reading" && book.pageCount && book.currentPage) {
+        var pctp = Math.min(100, Math.round((book.currentPage / book.pageCount) * 100));
+        art.appendChild(el("div", { class: "cover-cell__badge", text: pctp + "%" }));
+      }
     }
 
-    return frag;
+    if (book.coverUrl) {
+      var img = el("img", { src: book.coverUrl, alt: "", loading: "lazy" });
+      img.addEventListener("error", usePlaceholder);
+      art.appendChild(img);
+      addBadge();
+    } else {
+      usePlaceholder();
+    }
+
+    return el("button", { class: "cover-cell", "aria-label": book.title,
+      onclick: function () { openBookDetail(book.id); } }, [
+      art,
+      el("div", { class: "cover-cell__title", text: book.title }),
+      book.author ? el("div", { class: "cover-cell__author", text: book.author }) : null
+    ]);
   }
 
   function levelCard() {
@@ -163,68 +266,6 @@
     return "A fresh week. One session is all it takes to begin.";
   }
 
-  // ---------------------------------------------------------------- LIBRARY
-
-  function renderLibrary() {
-    var frag = document.createDocumentFragment();
-
-    var actions = el("div", { style: "display:flex; gap:10px; margin-top:8px" }, [
-      el("button", { class: "btn btn--primary", style: "flex:1", onclick: openSearchModal }, [
-        el("span", { html: '<svg width="18" height="18" viewBox="0 0 24 24" style="fill:currentColor"><path d="M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>' }),
-        "Search books"
-      ]),
-      el("button", { class: "btn", onclick: openManualAddModal, text: "Add manually" })
-    ]);
-    frag.appendChild(actions);
-
-    var reading = Store.getBooks("reading");
-    frag.appendChild(el("div", { class: "section-title", text: "Currently reading (" + reading.length + ")" }));
-    if (reading.length) {
-      var c1 = el("div", { class: "card", style: "padding:6px" });
-      reading.forEach(function (b) { c1.appendChild(bookRow(b)); });
-      frag.appendChild(c1);
-    } else {
-      frag.appendChild(el("p", { class: "muted", style: "padding:10px 6px",
-        text: "Nothing here yet — search for a book or add one manually." }));
-    }
-
-    var finished = Store.getBooks("finished");
-    frag.appendChild(el("div", { class: "section-title", text: "Finished (" + finished.length + ")" }));
-    if (finished.length) {
-      var c2 = el("div", { class: "card", style: "padding:6px" });
-      finished.forEach(function (b) { c2.appendChild(bookRow(b)); });
-      frag.appendChild(c2);
-    } else {
-      frag.appendChild(el("p", { class: "muted", style: "padding:10px 6px",
-        text: "Books you finish will collect here. 🌱" }));
-    }
-
-    return frag;
-  }
-
-  function bookRow(book) {
-    var sub = [];
-    if (book.author) sub.push(book.author);
-    var meta = [];
-    if (book.pageCount) {
-      if (book.status === "reading" && book.currentPage) {
-        meta.push("p." + book.currentPage + " / " + book.pageCount);
-      } else {
-        meta.push(book.pageCount + " pages");
-      }
-    }
-    var row = el("div", { class: "book-row", onclick: function () { openBookDetail(book.id); } }, [
-      UI.coverEl(book),
-      el("div", { class: "book-meta" }, [
-        el("div", { class: "book-title", text: book.title }),
-        el("div", { class: "book-author", text: book.author || "Unknown author" }),
-        meta.length ? el("div", { class: "book-sub", text: meta.join(" · ") }) : null
-      ]),
-      el("div", { class: "chevron", text: "›" })
-    ]);
-    return row;
-  }
-
   // ---------------------------------------------------------------- SEARCH / ADD
 
   function openSearchModal() {
@@ -294,7 +335,7 @@
               Store.addBook(r);
               UI.closeModal();
               UI.toast("Added to Currently Reading");
-              if (currentView === "library" || currentView === "home") render();
+              if (currentView === "home") render();
             } })
         ]);
         results.appendChild(row);
@@ -322,7 +363,7 @@
           });
           UI.closeModal();
           UI.toast("Added to Currently Reading");
-          if (currentView === "library" || currentView === "home") render();
+          if (currentView === "home") render();
         } })
     ]);
     UI.openModal("Add a book", body);
@@ -400,8 +441,8 @@
 
     if (!reading.length) {
       frag.appendChild(emptyState("📖", "Add a book first",
-        "Pick something from the library, then log your reading here.",
-        "Go to library", function () { navigate("library"); }));
+        "Pick something from your library, then log your reading here.",
+        "Go to library", function () { navigate("home"); }));
       return frag;
     }
 
@@ -677,11 +718,14 @@
         } });
     }
 
+    var nameInput = el("input", { class: "input", type: "text", maxlength: "24",
+      placeholder: "Your name", value: Store.getSettings().name || "" });
     var goalVal = el("input", { class: "input", type: "number", value: g.current, min: "1" });
     var daysReq = el("input", { class: "input", type: "number", value: g.daysRequired, min: "1", max: "7" });
     var windowD = el("input", { class: "input", type: "number", value: g.windowDays, min: "1", max: "30" });
 
     var body = el("div", {}, [
+      el("div", { class: "field" }, [el("label", { text: "Your name (for the greeting)" }), nameInput]),
       el("div", { class: "field" }, [el("label", { text: "Goal unit" }), metric]),
       el("p", { class: "muted", style: "font-size:13px; margin:-6px 2px 14px",
         text: "Days are counted in this unit toward your daily goal." }),
@@ -708,6 +752,7 @@
             patch.history = Goals.recordGoalChange(patch.current);
           }
           Store.setGoals(patch);
+          Store.setSettings({ name: nameInput.value.trim() });
           UI.closeModal(); UI.toast("Settings saved"); render();
         } }),
       el("button", { class: "btn btn--danger btn--block mt-8", text: "Reset all data",
@@ -767,6 +812,9 @@
   document.addEventListener("pagestep:changed", function () {
     document.getElementById("header-level").textContent = "Lv " + Store.getProgress().level;
   });
+
+  window.addEventListener("resize", measureHeader);
+  window.addEventListener("orientationchange", function () { setTimeout(measureHeader, 200); });
 
   navigate("home");
 

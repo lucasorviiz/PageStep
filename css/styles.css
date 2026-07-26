@@ -18,6 +18,7 @@
   --radius-sm:  11px;
   --shadow:     0 1px 2px rgba(46,42,38,.05), 0 6px 18px rgba(46,42,38,.06);
   --tabbar-h:   64px;
+  --header-h:   57px;      /* measured at runtime so sticky widgets sit below the header */
 
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -361,4 +362,121 @@ img { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ============================================================
+   My Library (Home) — greeting, sticky progress widget, covers
+   ============================================================ */
+
+.greeting {
+  margin: 10px 4px 4px;
+}
+.greeting__hi { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.greeting__sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+
+/* Sticky wrapper: paper background spans full content width so the grid
+   scrolls cleanly *under* the widget instead of peeking around it. */
+.lib-sticky {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 15;
+  background: var(--paper);
+  margin: 8px -16px 4px;      /* bleed to the view's edges */
+  padding: 4px 16px 10px;
+}
+
+.progress-widget { padding: 14px 16px; }
+.progress-widget__top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 12px;
+}
+.progress-widget__level {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 16px; color: var(--ink);
+}
+.progress-widget__level .lvl-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 30px; height: 30px; padding: 0 8px;
+  border-radius: 999px; background: var(--sage); color: #fff;
+  font-size: 14px; font-weight: 700;
+}
+.streak-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 650; color: #a9812f;
+  background: var(--gold-soft); padding: 5px 11px; border-radius: 999px;
+}
+.progress-widget__today {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; font-size: 13px; color: var(--muted);
+}
+.progress-widget__today b { color: var(--ink); font-weight: 650; }
+
+/* Cover grid ------------------------------------------------- */
+
+.lib-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 22px 4px 12px;
+}
+.lib-section-head h2 {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); font-weight: 650;
+}
+.lib-section-head .count { color: var(--muted); font-weight: 600; }
+.add-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); background: var(--surface);
+  color: var(--sage-dark); font-weight: 650; font-size: 13px;
+  padding: 6px 12px; border-radius: 999px;
+}
+.add-btn svg { width: 15px; height: 15px; fill: currentColor; }
+.add-btn:active { transform: scale(.96); }
+
+.cover-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 12px;
+}
+@media (max-width: 340px) {
+  .cover-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.cover-cell { text-align: left; background: none; border: none; padding: 0; cursor: pointer; }
+.cover-cell:active { transform: scale(.96); }
+.cover-cell__art {
+  position: relative;
+  width: 100%; aspect-ratio: 2 / 3;
+  border-radius: 9px; overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: 0 1px 3px rgba(46,42,38,.14), 0 4px 10px rgba(46,42,38,.08);
+}
+.cover-cell__art img { width: 100%; height: 100%; object-fit: cover; }
+/* minimalist "cover" for books without artwork */
+.cover-cell__art--placeholder {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px;
+  background: linear-gradient(150deg, var(--sage-soft), #d7e4dc);
+}
+.cover-cell__art--placeholder span {
+  font-size: 11px; font-weight: 650; color: var(--sage-dark);
+  line-height: 1.25; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cover-cell__badge {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(46,42,38,.72); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+  backdrop-filter: blur(2px);
+}
+.cover-cell__title {
+  font-size: 11.5px; font-weight: 600; color: var(--ink);
+  margin-top: 6px; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cover-cell__author {
+  font-size: 10.5px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.lib-empty {
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 22px 16px; text-align: center; color: var(--muted); font-size: 14px;
 }

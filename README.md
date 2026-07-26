@@ -5,11 +5,14 @@ iPhone home screen. Pick a book, log reading sessions (by timer or by hand), and
 grow a small daily goal that steps up as you stay consistent. No accounts, no
 backend, no nagging.
 
-- **Library** — search millions of books via the [Open Library API](https://openlibrary.org/dev/docs/api/search), or add one manually.
+- **My Library home** — opens to a personalized greeting, a sticky streak/level widget
+  (Mon–Sun week tracker), and your books as a cover grid (*Currently Reading* / *Finished*),
+  4 per row. Covers come from the [Open Library Covers API](https://openlibrary.org/dev/docs/api/covers).
+- **Add books** — search millions of titles via the [Open Library API](https://openlibrary.org/dev/docs/api/search), or add one manually.
 - **Log sessions** — a big *Start Reading* timer, or quick manual entry of minutes/pages.
 - **Progressive goals** — start at 10 min/day; hit your goal *5 of any 7 days* and it
   steps up (10 → 15 → 20 → 30 → 45 → 60). Fully configurable.
-- **Levels** — you level up each time you sustain the goal. Shown as a ring on Home & Progress.
+- **Levels** — you level up each time you sustain the goal. Shown on the home widget & Progress tab.
 - **Gentle by design** — a *4 of 7 days* weekly view instead of an all-or-nothing streak,
   a soft consistency counter (never shaming), and a little confetti when you hit the day's goal.
 - **Works offline** — installs to the home screen and opens full-screen; you can log
@@ -108,6 +111,7 @@ file) and **Import data** on the other device.
 
 **Progress → ⚙ Goal settings** lets you change:
 
+- **Your name** — used in the "Welcome back, …" greeting on the home screen.
 - **Goal unit** — minutes or pages.
 - **Current daily goal** — the target you're working toward now.
 - **Days required** & **window** — the "N of M days" rule for levelling up

@@ -42,7 +42,8 @@
         goalIncreases: 0                // level = goalIncreases + 1
       },
       settings: {
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        name: "Lucas"                   // used in the welcome greeting
       }
     };
   }
@@ -215,6 +216,13 @@
     return s.progress;
   }
 
+  function setSettings(patch) {
+    var s = load();
+    Object.assign(s.settings, patch);
+    save();
+    return s.settings;
+  }
+
   // ---- helpers ------------------------------------------------------------
 
   // Local (not UTC) YYYY-MM-DD so "today" matches the reader's clock.
@@ -263,6 +271,7 @@
     getGoals: getGoals,
     getProgress: getProgress,
     getSettings: getSettings,
+    setSettings: setSettings,
     setGoals: setGoals,
     setProgress: setProgress,
     // data mgmt

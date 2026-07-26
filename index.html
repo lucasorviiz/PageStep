@@ -26,7 +26,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="app-header__inner">
-        <h1 class="app-title">PageStep</h1>
+        <h1 class="app-title" id="app-title">PageStep</h1>
         <span id="header-level" class="level-chip" title="Your level">Lv 1</span>
       </div>
     </header>
@@ -36,12 +36,8 @@
 
     <!-- Bottom navigation -->
     <nav class="tabbar" id="tabbar">
-      <button class="tab" data-view="home" aria-label="Home">
-        <svg viewBox="0 0 24 24" class="tab__icon"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
-        <span>Home</span>
-      </button>
-      <button class="tab" data-view="library" aria-label="Library">
-        <svg viewBox="0 0 24 24" class="tab__icon"><path d="M5 4h9a2 2 0 0 1 2 2v14l-4-2-4 2V6a2 2 0 0 0-2-2H5zm14 0h.5A1.5 1.5 0 0 1 21 5.5V18l-2 1V4z"/></svg>
+      <button class="tab" data-view="home" aria-label="Library">
+        <svg viewBox="0 0 24 24" class="tab__icon"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
         <span>Library</span>
       </button>
       <button class="tab tab--primary" data-view="log" aria-label="Start reading">
